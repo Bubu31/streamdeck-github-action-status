@@ -1,0 +1,43 @@
+{
+  "SDKVersion": 2,
+  "Author": "music-maths",
+  "CodePath": "run.bat",
+  "CodePathMac": "run.sh",
+  "Description": "Display GitHub Actions workflow status on your Stream Deck",
+  "Name": "GitHub Action Status",
+  "Icon": "images/plugin-icon",
+  "URL": "https://github.com/music-maths/streamdeck-github-action-status",
+  "Version": "1.0.0",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    },
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.14"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "6.0"
+  },
+  "Category": "GitHub",
+  "CategoryIcon": "images/category-icon",
+  "Actions": [
+    {
+      "Icon": "images/action-icon",
+      "Name": "Workflow Status",
+      "States": [
+        {
+          "Image": "images/status-unknown",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "Displays the status of a GitHub Actions workflow",
+      "UUID": "com.music-maths.github-action-status.workflow-status",
+      "PropertyInspectorPath": "actions/workflow-status/property-inspector.html"
+    }
+  ]
+}

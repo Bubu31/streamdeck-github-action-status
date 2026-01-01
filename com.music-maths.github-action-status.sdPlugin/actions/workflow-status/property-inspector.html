@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>GitHub Action Status</title>
+  <link rel="stylesheet" href="https://sdpi-components.dev/sdpi-components.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 12px;
+      color: #9a9a9a;
+      background-color: #2d2d2d;
+      margin: 0;
+      padding: 12px;
+    }
+
+    .sdpi-wrapper {
+      margin-bottom: 12px;
+    }
+
+    .sdpi-item {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+
+    .sdpi-item-label {
+      color: #c8c8c8;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .sdpi-item-value {
+      width: 100%;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"] {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      background-color: #3a3a3a;
+      color: #e8e8e8;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #0078d7;
+    }
+
+    .info-text {
+      font-size: 10px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .section-title {
+      color: #e8e8e8;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #444;
+    }
+
+    .help-link {
+      color: #0078d7;
+      text-decoration: none;
+      font-size: 11px;
+    }
+
+    .help-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <div class="section-title">GitHub Configuration</div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">GitHub Token</div>
+      <div class="sdpi-item-value">
+        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx" />
+        <div class="info-text">
+          <a class="help-link" href="https://github.com/settings/tokens/new?scopes=repo&description=StreamDeck" target="_blank">
+            Create a Personal Access Token
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Owner</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="owner" placeholder="username or organization" />
+      </div>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Repository</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="repo" placeholder="repository-name" />
+      </div>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Workflow (optional)</div>
+      <div class="sdpi-item-value">
+        <input type="text" id="workflow" placeholder="ci.yml or workflow name" />
+        <div class="info-text">Leave empty to show status of all workflows</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top: 16px;">Settings</div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Refresh Interval (seconds)</div>
+      <div class="sdpi-item-value">
+        <input type="number" id="refreshInterval" min="10" max="3600" value="60" />
+        <div class="info-text">Minimum: 10 seconds</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let websocket = null;
+    let pluginUUID = null;
+    let actionInfo = null;
+
+    function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
+      pluginUUID = inPropertyInspectorUUID;
+      actionInfo = JSON.parse(inActionInfo);
+
+      websocket = new WebSocket('ws://127.0.0.1:' + inPort);
+
+      websocket.onopen = function() {
+        websocket.send(JSON.stringify({
+          event: inRegisterEvent,
+          uuid: pluginUUID
+        }));
+
+        websocket.send(JSON.stringify({
+          event: 'getSettings',
+          context: pluginUUID
+        }));
+      };
+
+      websocket.onmessage = function(evt) {
+        const message = JSON.parse(evt.data);
+        if (message.event === 'didReceiveSettings') {
+          loadSettings(message.payload.settings);
+        }
+      };
+    }
+
+    function loadSettings(settings) {
+      document.getElementById('githubToken').value = settings.githubToken || '';
+      document.getElementById('owner').value = settings.owner || '';
+      document.getElementById('repo').value = settings.repo || '';
+      document.getElementById('workflow').value = settings.workflow || '';
+      document.getElementById('refreshInterval').value = settings.refreshInterval || 60;
+    }
+
+    function saveSettings() {
+      const settings = {
+        githubToken: document.getElementById('githubToken').value,
+        owner: document.getElementById('owner').value,
+        repo: document.getElementById('repo').value,
+        workflow: document.getElementById('workflow').value,
+        refreshInterval: Math.max(10, parseInt(document.getElementById('refreshInterval').value) || 60)
+      };
+
+      websocket.send(JSON.stringify({
+        event: 'setSettings',
+        context: pluginUUID,
+        payload: settings
+      }));
+    }
+
+    // Add event listeners to save on change
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('change', saveSettings);
+      input.addEventListener('blur', saveSettings);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "streamdeck-github-action-status",
+  "version": "1.0.0",
+  "description": "Stream Deck plugin to display GitHub Actions workflow status",
+  "main": "com.music-maths.github-action-status.sdPlugin/plugin.js",
+  "scripts": {
+    "build": "tsc && npm run copy-deps",
+    "copy-deps": "xcopy /E /I /Y node_modules\\ws com.music-maths.github-action-status.sdPlugin\\node_modules\\ws",
+    "watch": "tsc --watch",
+    "install-plugin": "xcopy /E /I /Y com.music-maths.github-action-status.sdPlugin \"%APPDATA%\\Elgato\\StreamDeck\\Plugins\\com.music-maths.github-action-status.sdPlugin\""
+  },
+  "keywords": [
+    "streamdeck",
+    "github",
+    "actions",
+    "ci",
+    "workflow"
+  ],
+  "author": "music-maths",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
