@@ -1,35 +1,64 @@
 import WebSocket from 'ws';
-import * as fs from 'fs';
-import * as path from 'path';
 import { fetchWorkflowStatus } from './github-api';
 import { ActionInstance, ActionSettings, WorkflowStatus, WillAppearPayload, KeyDownPayload } from './types';
 
 const LONG_PRESS_THRESHOLD = 500; // ms
 
+// Status colors
+const STATUS_COLORS: Record<WorkflowStatus, string> = {
+  success: '#22c55e',
+  failure: '#ef4444',
+  pending: '#f59e0b',
+  unknown: '#6b7280'
+};
+
 class StreamDeckPlugin {
   private websocket: WebSocket | null = null;
   private actions: Map<string, ActionInstance> = new Map();
   private pluginUUID: string = '';
-  private imagesCache: Map<string, string> = new Map();
 
-  constructor() {
-    this.loadImages();
+  private getStatusIcon(status: WorkflowStatus): string {
+    const color = STATUS_COLORS[status];
+    switch (status) {
+      case 'success':
+        return `<circle cx="36" cy="36" r="30" fill="${color}"/>
+                <path d="M22 36 L32 46 L50 26" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+      case 'failure':
+        return `<circle cx="36" cy="36" r="30" fill="${color}"/>
+                <path d="M24 24 L48 48 M48 24 L24 48" stroke="white" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+      case 'pending':
+        return `<circle cx="36" cy="36" r="30" fill="${color}"/>
+                <circle cx="36" cy="36" r="20" stroke="white" stroke-width="4" fill="none" stroke-dasharray="31 100"/>`;
+      default:
+        return `<circle cx="36" cy="36" r="30" fill="${color}"/>
+                <text x="36" y="44" text-anchor="middle" font-size="28" font-family="Arial" fill="white" font-weight="bold">?</text>`;
+    }
   }
 
-  private loadImages(): void {
-    const imagesDir = path.join(__dirname, 'images');
-    const statuses: WorkflowStatus[] = ['success', 'failure', 'pending', 'unknown'];
+  private generateImage(status: WorkflowStatus, dateStr?: string): string {
+    const icon = this.getStatusIcon(status);
 
-    for (const status of statuses) {
-      const svgPath = path.join(imagesDir, `status-${status}.svg`);
-      try {
-        const svgContent = fs.readFileSync(svgPath, 'utf-8');
-        const base64 = Buffer.from(svgContent).toString('base64');
-        this.imagesCache.set(status, `data:image/svg+xml;base64,${base64}`);
-      } catch {
-        console.error(`Failed to load image: ${svgPath}`);
-      }
+    // Format date for display (DD/MM HH:MM)
+    let dateDisplay = '';
+    if (dateStr) {
+      const date = new Date(dateStr);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      dateDisplay = `${day}/${month} ${hours}:${minutes}`;
     }
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">
+      <rect width="144" height="144" fill="#1a1a1a"/>
+      ${dateStr ? `<text x="140" y="18" text-anchor="end" font-size="14" font-family="Arial, sans-serif" fill="#ffffff">${dateDisplay}</text>` : ''}
+      <g transform="translate(36, 36)">
+        ${icon}
+      </g>
+    </svg>`;
+
+    const base64 = Buffer.from(svg).toString('base64');
+    return `data:image/svg+xml;base64,${base64}`;
   }
 
   connect(port: number, uuid: string, registerEvent: string, _info: string): void {
@@ -193,7 +222,7 @@ class StreamDeckPlugin {
       displayText = this.formatStatusText(result.status);
     }
 
-    this.updateDisplay(context, result.status, displayText);
+    this.updateDisplay(context, result.status, displayText, result.updatedAt);
   }
 
   private formatStatusText(status: WorkflowStatus): string {
@@ -209,19 +238,17 @@ class StreamDeckPlugin {
     }
   }
 
-  private updateDisplay(context: string, status: WorkflowStatus, title: string): void {
-    const image = this.imagesCache.get(status);
+  private updateDisplay(context: string, status: WorkflowStatus, title: string, updatedAt?: string): void {
+    const image = this.generateImage(status, updatedAt);
 
-    if (image) {
-      this.send({
-        event: 'setImage',
-        context,
-        payload: {
-          image,
-          target: 0 // Both hardware and software
-        }
-      });
-    }
+    this.send({
+      event: 'setImage',
+      context,
+      payload: {
+        image,
+        target: 0 // Both hardware and software
+      }
+    });
 
     this.send({
       event: 'setTitle',

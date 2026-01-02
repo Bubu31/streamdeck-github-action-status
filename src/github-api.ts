@@ -27,7 +27,8 @@ export async function fetchWorkflowStatus(
       status,
       name: latestRun.name,
       url: latestRun.html_url,
-      branch: latestRun.head_branch
+      branch: latestRun.head_branch,
+      updatedAt: latestRun.updated_at
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

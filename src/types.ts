@@ -55,6 +55,7 @@ export interface WorkflowStatusResult {
   name: string;
   url: string;
   branch: string;
+  updatedAt?: string;
   error?: string;
 }
 
