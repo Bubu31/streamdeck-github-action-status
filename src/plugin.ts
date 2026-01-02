@@ -51,8 +51,8 @@ class StreamDeckPlugin {
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">
       <rect width="144" height="144" fill="#1a1a1a"/>
-      ${dateStr ? `<text x="140" y="18" text-anchor="end" font-size="14" font-family="Arial, sans-serif" fill="#ffffff">${dateDisplay}</text>` : ''}
-      <g transform="translate(36, 36)">
+      ${dateStr ? `<text x="72" y="20" text-anchor="middle" font-size="14" font-family="Arial, sans-serif" fill="#ffffff">${dateDisplay}</text>` : ''}
+      <g transform="translate(36, 40)">
         ${icon}
       </g>
     </svg>`;
